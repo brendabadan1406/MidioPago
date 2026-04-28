@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MídioPago 🐉</title>
+<!--
+  LOG COMPARTILHADO — jsonbin.io (grátis)
+  1. Crie conta em jsonbin.io
+  2. New Bin com: {"log":[],"scores":{}}
+  3. Copie o Bin ID e crie uma Master Key
+  4. Cole abaixo nas constantes JSONBIN_BIN_ID / JSONBIN_API_KEY
+  5. Suba novamente no Netlify/Vercel
+-->
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0e16;--card:#141720;--card2:#1c2030;--border:#252a3a;
+  --text:#e8e6de;--muted:#6b6f7d;--muted2:#9a98a0;
+  --teal:#5DCAA5;--tealDk:#1D9E75;--tealDkr:#0F6E56;
+  --amber:#EF9F27;--amberDk:#BA7517;
+  --green:#97C459;--greenDk:#3B6D11;
+  --gray:#B4B2A9;--grayDk:#888780;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem 5rem}
+.app{width:100%;max-width:500px}
+
+/* Setup */
+#setupScreen{position:fixed;inset:0;background:rgba(11,14,22,.97);display:flex;align-items:center;justify-content:center;z-index:100;padding:1.5rem}
+.setup-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:2rem;width:100%;max-width:380px;text-align:center}
+.setup-logo{font-size:44px;margin-bottom:.75rem}
+.setup-title{font-size:24px;font-weight:700;color:#fff;margin-bottom:.3rem}
+.setup-sub{font-size:13px;color:var(--muted2);margin-bottom:1.5rem;line-height:1.6}
+.setup-input{width:100%;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:13px 14px;font-size:16px;color:var(--text);outline:none;text-align:center;font-family:inherit;transition:border-color .15s}
+.setup-input:focus{border-color:var(--teal)}
+.setup-input::placeholder{color:var(--muted)}
+.setup-btn{width:100%;margin-top:12px;padding:13px;background:var(--tealDk);border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s}
+.setup-btn:hover{opacity:.88}
+.setup-btn:disabled{opacity:.35;cursor:not-allowed}
+
+/* Header */
+.header{margin-bottom:1.25rem}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--tealDk),var(--teal));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.brand-name{font-size:20px;font-weight:700;color:#fff;letter-spacing:-.3px}
+.user-chip{display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 12px 5px 5px;cursor:pointer;transition:background .12s}
+.user-chip:hover{background:var(--card2)}
+.user-avatar{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+.user-name-text{font-size:13px}
+.header-sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+/* Pet card */
+.pet-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.5rem 1.5rem 1.25rem;margin-bottom:1rem;text-align:center}
+canvas{cursor:pointer;display:block;margin:0 auto}
+.mood-badge{display:inline-block;font-size:12px;padding:3px 12px;border-radius:999px;margin-bottom:.75rem;font-weight:500}
+.pet-name{font-size:18px;font-weight:700;color:#fff;margin-top:.5rem;line-height:1.3}
+.stage-row{display:inline-flex;align-items:center;justify-content:center;gap:6px;margin-top:3px}
+.pet-stage-lbl{font-size:12px;color:var(--muted2)}
+
+/* Tooltip */
+.tip-trigger{position:relative;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--card2);border:1px solid var(--border);font-size:10px;color:var(--muted);cursor:help;flex-shrink:0;font-style:normal;user-select:none;transition:border-color .12s}
+.tip-trigger:hover{border-color:var(--teal);color:var(--teal)}
+.tip-box{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);background:#1c2030;border:1px solid var(--border);border-radius:12px;padding:13px 14px;width:270px;font-size:12px;line-height:1.7;color:var(--muted2);z-index:50;pointer-events:none;opacity:0;transition:opacity .15s;text-align:left;white-space:normal}
+.tip-box::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#252a3a}
+.tip-trigger:hover .tip-box,.tip-trigger.open .tip-box{opacity:1}
+
+/* XP */
+.xp-section{padding:0 .25rem;margin-bottom:1rem}
+.xp-row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:5px}
+.xp-track{background:var(--card2);border-radius:999px;height:10px;overflow:hidden;border:1px solid var(--border)}
+.xp-fill{background:var(--tealDk);height:100%;border-radius:999px;transition:width .6s cubic-bezier(.34,1.56,.64,1)}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center}
+.stat-label{font-size:10px;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.5px}
+.stat-val{font-size:22px;font-weight:700;color:#fff}
+
+/* Section label */
+.section-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin-bottom:.75rem}
+
+/* Accordion */
+.cat-block{margin-bottom:7px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--card)}
+.cat-header{width:100%;display:flex;align-items:center;gap:9px;padding:11px 14px;background:none;border:none;color:var(--text);cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;text-align:left;transition:background .12s}
+.cat-header:hover{background:var(--card2)}
+.cat-emoji{font-size:14px;flex-shrink:0;line-height:1}
+.cat-title{flex:1}
+.cat-count{font-size:11px;color:var(--muted);background:var(--card2);border:1px solid var(--border);border-radius:999px;padding:1px 7px;flex-shrink:0}
+.cat-arrow{font-size:10px;color:var(--muted);transition:transform .25s;flex-shrink:0}
+.cat-arrow.open{transform:rotate(180deg)}
+.cat-body{overflow:hidden;max-height:0;transition:max-height .32s ease}
+.cat-body.open{max-height:700px}
+.cat-inner{padding:0 10px 10px}
+.habit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;padding-top:8px}
+.habit-btn{background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:9px 11px;text-align:left;cursor:pointer;width:100%;color:var(--text);transition:background .12s,border-color .12s;font-family:inherit}
+.habit-btn:hover{background:#23273a;border-color:#353a50}
+.habit-btn:active{transform:scale(.97)}
+.hb-label{font-size:12px;font-weight:500;margin-bottom:2px;line-height:1.3}
+.hb-xp{font-size:11px;color:var(--teal)}
+
+/* Toast */
+.toast{text-align:center;font-size:13px;font-weight:500;min-height:22px;margin:.5rem 0 .25rem;transition:opacity .3s}
+
+/* Log card */
+.log-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.25rem;margin-top:.5rem}
+.log-tabs{display:flex;gap:0;margin-bottom:1rem;background:var(--card2);border-radius:8px;padding:3px}
+.log-tab{flex:1;padding:7px;border:none;background:none;font-family:inherit;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;border-radius:6px;transition:background .15s,color .15s}
+.log-tab.active{background:var(--card);color:var(--text)}
+.log-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem}
+.log-refresh{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .12s}
+.log-refresh:hover{background:var(--card2)}
+.log-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.log-item:last-child{border-bottom:none}
+.log-avatar{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff}
+.log-body{flex:1;min-width:0}
+.log-who{font-size:12px;font-weight:600;color:var(--text);margin-bottom:1px}
+.log-what{font-size:12px;color:var(--muted2)}
+.log-meta{text-align:right;flex-shrink:0}
+.log-xp-pill{font-size:12px;font-weight:600;color:var(--teal);display:block}
+.log-ts{font-size:10px;color:var(--muted)}
+.empty-log{font-size:13px;color:var(--muted);font-style:italic;text-align:center;padding:1.25rem 0}
+.setup-notice{background:#1a1500;border:1px solid #3a3000;border-radius:10px;padding:10px 14px;font-size:12px;color:#a08030;margin-bottom:.75rem;line-height:1.5}
+
+/* Ranking chart */
+#rankingView{display:none}
+.rank-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+.rank-row:last-child{border-bottom:none}
+.rank-pos{font-size:11px;font-weight:700;color:var(--muted);width:18px;flex-shrink:0;text-align:center}
+.rank-pos.gold{color:#EF9F27}
+.rank-pos.silver{color:#B4B2A9}
+.rank-pos.bronze{color:#CD7F32}
+.rank-avatar{width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff}
+.rank-info{flex:1;min-width:0}
+.rank-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+.rank-bar-wrap{background:var(--card2);border-radius:999px;height:7px;overflow:hidden;border:1px solid var(--border)}
+.rank-bar{height:100%;border-radius:999px;transition:width .8s cubic-bezier(.34,1.56,.64,1)}
+.rank-xp{font-size:12px;font-weight:600;color:var(--teal);flex-shrink:0;min-width:54px;text-align:right}
+.rank-stage{font-size:10px;color:var(--muted);margin-top:1px}
+
+/* Spinner */
+.spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:5px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:420px){.habit-grid{grid-template-columns:1fr}}
+@media(max-width:500px){.tip-box{width:220px;left:auto;right:0;transform:none}.tip-box::after{left:auto;right:12px;transform:none}}
+</style>
+</head>
+<body>
+
+<!-- Setup -->
+<div id="setupScreen">
+  <div class="setup-box">
+    <div class="setup-logo">🐉</div>
+    <div class="setup-title">MídioPago</div>
+    <div class="setup-sub">O mascote virtual do mídias cresce com os hábitos do time.<br>Qual é o seu nome?</div>
+    <input class="setup-input" id="nameInput" type="text" placeholder="Ex: Brenda, Ana, Carlos..." maxlength="30" autocomplete="off">
+    <button class="setup-btn" id="enterBtn" onclick="enterApp()" disabled>Entrar no time →</button>
+  </div>
+</div>
+
+<!-- App -->
+<div class="app" id="mainApp" style="display:none">
+
+  <div class="header">
+    <div class="header-top">
+      <div class="brand">
+        <div class="brand-icon">🐉</div>
+        <div class="brand-name">MídioPago</div>
+      </div>
+      <div class="user-chip" onclick="resetName()" title="Trocar usuário">
+        <div class="user-avatar" id="headerAvatar"></div>
+        <div class="user-name-text" id="headerName"></div>
+      </div>
+    </div>
+    <div class="header-sub">O mascote virtual do mídias cresce com os hábitos do time</div>
+  </div>
+
+  <div class="pet-card">
+    <div id="moodBadge" class="mood-badge">● carregando...</div>
+    <canvas id="petCanvas" width="180" height="180" title="Clique para animar!"></canvas>
+    <div id="petName" class="pet-name">—</div>
+    <div class="stage-row">
+      <span id="petStageLabel" class="pet-stage-lbl">...</span>
+      <span class="tip-trigger" id="stageTip" onclick="this.classList.toggle('open')">ⓘ
+        <span class="tip-box" id="tipBox">...</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="xp-section">
+    <div class="xp-row"><span>Experiência</span><span id="xpText">0 / 200 XP</span></div>
+    <div class="xp-track"><div id="xpFill" class="xp-fill" style="width:0%"></div></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Fase</div><div class="stat-val" id="statStage">0</div></div>
+    <div class="stat"><div class="stat-label">Sequência</div><div class="stat-val" id="statStreak">0d</div></div>
+    <div class="stat"><div class="stat-label">XP total</div><div class="stat-val" id="statTotal">0</div></div>
+  </div>
+
+  <div class="section-label">O que você fez hoje?</div>
+  <div id="categoryList"></div>
+  <div id="toast" class="toast" style="opacity:0"></div>
+
+  <!-- Log card -->
+  <div class="log-card">
+    <div class="log-tabs">
+      <button class="log-tab active" id="tabFeed" onclick="switchTab('feed')">📋 Feed do time</button>
+      <button class="log-tab" id="tabRanking" onclick="switchTab('ranking')">📊 Ranking de XP</button>
+    </div>
+
+    <!-- Feed tab -->
+    <div id="feedView">
+      <div class="log-header">
+        <div class="section-label" style="margin:0">Atividade recente</div>
+        <button class="log-refresh" id="refreshBtn" onclick="refreshLog()">↻ Atualizar</button>
+      </div>
+      <div id="setupNotice" class="setup-notice" style="display:none">
+        <strong style="color:var(--amber)">Log compartilhado não configurado.</strong> Configure o JSONBin conforme as instruções no topo do arquivo para o time todo ver junto.
+      </div>
+      <div id="logList"></div>
+      <div id="emptyLog" class="empty-log" style="display:none">Nenhuma atividade ainda. Bora produzir!</div>
+    </div>
+
+    <!-- Ranking tab -->
+    <div id="rankingView">
+      <div class="log-header">
+        <div class="section-label" style="margin:0">XP acumulado por pessoa</div>
+        <button class="log-refresh" id="refreshRankBtn" onclick="refreshLog()">↻ Atualizar</button>
+      </div>
+      <div id="rankingNotice" class="setup-notice" style="display:none">
+        <strong style="color:var(--amber)">Modo local.</strong> Sem JSONBin configurado, o ranking mostra apenas seus próprios dados.
+      </div>
+      <div id="rankingList"></div>
+      <div id="emptyRanking" class="empty-log" style="display:none">Nenhum dado ainda. Registre sua primeira atividade!</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+const JSONBIN_BIN_ID  = '';
+const JSONBIN_API_KEY = '';
+// ═══════════════════════════════════════════════
+
+const IS_SHARED = JSONBIN_BIN_ID !== '' && JSONBIN_API_KEY !== '';
+
+const STAGES = [
+  { name:'🍼 Mídio Pago - Jovem Aprendiz', short:'Fase 0', xp:0,
+    desc:'Aqui, nosso baby Mídio Pago está tentando entender se "job" é pessoa, tarefa ou um estado emocional. O briefing chega, ele lê, relê e, na dúvida, abre o Chat só pra garantir que não deixou passar nada. É a fase de desenvolvimento em que ele absorve tudo, pergunta sem medo e, às vezes, finge que entendeu na primeira explicação — torcendo pra ninguém aprofundar muito.' },
+  { name:'🐣 Mídio Pago - Estagiário', short:'Fase 1', xp:200,
+    desc:'Como Estagiário, o Mídio Pago já pegou o básico, mas ainda vive no modo "confere aí pra mim?". As primeiras entregas começam a acontecer e, junto com elas, vem a ansiedade de atualizar o resultado a cada 3 minutos, como se isso fosse acelerar o algoritmo. É a fase do "subi, agora é só performar 🙏", onde ele comemora clique como gol e aprende que nem tudo que sobe… performa.' },
+  { name:'💻 Mídio Pago - Analista', short:'Fase 2', xp:500,
+    desc:'Como Analista, o Mídio Pago já não cai em qualquer número bonito. Ele abre o dashboard antes do café e, quando vê um resultado bom demais, já pensa: "onde tá o erro?". Aqui, ele entrega, analisa, ajusta e começa a entender que mídia não é sorte — é método (e um pouco de sofrimento também).' },
+  { name:'🛡️ Mídio Pago - Especialista', short:'Fase 3', xp:1000,
+    desc:'Como Especialista, o Mídio Pago não só executa — ele melhora. Já tem repertório, opinião e uma leve impaciência com retrabalho. Ele olha uma campanha e automaticamente pensa em três otimizações antes mesmo de alguém pedir. É a fase do "dá pra escalar… mas não desse jeito aí não".' },
+  { name:'🧭 Mídio Pago - Coordenador', short:'Fase 4', xp:2000,
+    desc:'Como Coordenador, o Mídio Pago começa a jogar o jogo do time inteiro. Ele organiza, prioriza, responde, pergunta quem tá com o quê (e às vezes pergunta de novo). Vive em reuniões que poderiam ser um e-mail, mas tem o talento de fazer as coisas andarem mesmo assim.' },
+  { name:'🪽 Mídio Pago - Gerente', short:'Fase 5', xp:3500,
+    desc:'Como Gerente, o Mídio Pago desbloqueia uma nova habilidade: questionar tudo. "Qual é o objetivo disso?" vira quase automático. Ele começa a entender que fazer mais não significa performar mais — e que um bom "não" pode salvar horas de trabalho.' },
+  { name:'🧠 Mídio Pago - Superintendente', short:'Fase 6', xp:5500,
+    desc:'Como Superintendente, o Mídio Pago já não tá mais no detalhe — tá no movimento. Ele enxerga problema antes de acontecer, conecta áreas e traz umas reflexões que fazem todo mundo repensar o que tava fazendo. É tipo prever o futuro, mas com base em dado (e experiência).' },
+  { name:'👑 Mídio Pago - Pai de Todos (CEO)', short:'Fase 7', xp:8000,
+    desc:'Como Pai de Todos, o Mídio Pago já transcendeu o operacional. Ele não fala mais só de campanha — fala de impacto, direção e futuro. Aqui, ele toma decisões que ninguém entendeu na hora… mas todo mundo entende depois. É o nível em que mídia deixa de ser execução e vira estratégia de verdade.' },
+];
+const XP_CAPS = STAGES.map((s,i)=>i<STAGES.length-1?STAGES[i+1].xp:Infinity);
+
+const HABIT_CATEGORIES = [
+  { id:'operacoes',    emoji:'📌', title:'Operações e entregas', habits:[
+    {id:'relatorio',    label:'Relatório',             xp:15},
+    {id:'analise',      label:'Análise de campanha',   xp:20},
+    {id:'orcamento',    label:'Orçamento',             xp:12},
+    {id:'planejamento', label:'Planejamento de mídia', xp:20},
+    {id:'reuniao',      label:'Reunião',               xp:8 },
+    {id:'regua',        label:'Régua de comunicação',  xp:15},
+    {id:'conteudo',     label:'Conteúdo rede social',  xp:10},
+    {id:'briefing',     label:'Briefing',              xp:12},
+    {id:'publindevida', label:'Publicação indevida',   xp:10},
+    {id:'smartcare',    label:'Smartcare',             xp:15},
+  ]},
+  { id:'inteligencia', emoji:'📊', title:'Inteligência e análise', habits:[
+    {id:'concorrencia', label:'Análise de concorrência', xp:20},
+    {id:'social',       label:'Social Listening',        xp:15},
+    {id:'validacao',    label:'Validação de campanhas',  xp:18},
+    {id:'dados',        label:'Análise de dados',        xp:18},
+  ]},
+  { id:'ideias',       emoji:'💡', title:'Ideias e inovação', habits:[
+    {id:'ideia_impl',   label:'Ideia implementável', xp:25},
+    {id:'ideia_feita',  label:'Ideia implementada',  xp:50},
+    {id:'ideia_result', label:'Ideia com resultado', xp:80},
+  ]},
+  { id:'parcerias',    emoji:'🤝', title:'Parcerias', habits:[
+    {id:'parc_int',     label:'Parceria com área interna',          xp:30},
+    {id:'parc_ext',     label:'Parceria externa (veículo/creator)', xp:50},
+    {id:'parc_result',  label:'Parceria com resultado',             xp:80},
+  ]},
+  { id:'mercado',      emoji:'🧠', title:'Inteligência de mercado', habits:[
+    {id:'insight',      label:'Insight relevante',        xp:25},
+    {id:'tendencia',    label:'Tendência aplicada',       xp:40},
+    {id:'benchmark',    label:'Benchmark que virou ação', xp:35},
+  ]},
+  { id:'processos',    emoji:'⚙️', title:'Melhoria de processos', habits:[
+    {id:'sugestao',     label:'Sugestão de melhoria', xp:20},
+    {id:'otimizado',    label:'Processo otimizado',   xp:40},
+    {id:'automacao',    label:'Automação criada',     xp:60},
+  ]},
+  { id:'performance',  emoji:'🎯', title:'Performance e resultado', habits:[
+    {id:'acima_meta',   label:'Campanha acima da meta',       xp:40},
+    {id:'melhor_perf',  label:'Melhor performance da semana', xp:60},
+    {id:'kpi_cresce',   label:'Crescimento relevante de KPI', xp:50},
+  ]},
+  { id:'colaboracao',  emoji:'🧩', title:'Colaboração', habits:[
+    {id:'ajudou',       label:'Ajudou outro time',   xp:15},
+    {id:'mentoria',     label:'Mentoria interna',    xp:25},
+    {id:'proj_conj',    label:'Projeto em conjunto', xp:30},
+  ]},
+  { id:'protagonismo', emoji:'🎤', title:'Protagonismo', habits:[
+    {id:'apresentou',   label:'Apresentou ideia/projeto', xp:20},
+    {id:'liderou',      label:'Liderou iniciativa',       xp:40},
+    {id:'zero',         label:'Projeto do zero',          xp:70},
+  ]},
+];
+
+const AV_COLORS=['#1D9E75','#378ADD','#D85A30','#7F77DD','#D4537E','#639922','#BA7517','#185FA5'];
+function nameColor(n){let h=0;for(let c of n)h=(h*31+c.charCodeAt(0))&0xffffffff;return AV_COLORS[Math.abs(h)%AV_COLORS.length];}
+function initials(n){return n.trim().split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2);}
+function stageForXP(xp){let s=0;for(let i=STAGES.length-1;i>=0;i--){if(xp>=STAGES[i].xp){s=i;break;}}return s;}
+
+let user='', pet={xp:0,streak:0,lastDate:'',log:[]};
+let anim={t:0,jump:false,jt:0,evolve:false,et:0};
+let cachedData={log:[],scores:{}};
+let activeTab='feed';
+
+// ── Setup ────────────────────────────────────────────────────
+document.getElementById('nameInput').addEventListener('input',function(){document.getElementById('enterBtn').disabled=this.value.trim().length<2;});
+document.getElementById('nameInput').addEventListener('keydown',function(e){if(e.key==='Enter'&&this.value.trim().length>=2)enterApp();});
+function enterApp(){const n=document.getElementById('nameInput').value.trim();if(n.length<2)return;user=n;localStorage.setItem('midiopago-user',n);showApp();}
+function resetName(){if(!confirm('Trocar de usuário? Seu progresso fica salvo.'))return;localStorage.removeItem('midiopago-user');location.reload();}
+function showApp(){
+  document.getElementById('setupScreen').style.display='none';
+  document.getElementById('mainApp').style.display='block';
+  const col=nameColor(user);
+  document.getElementById('headerAvatar').style.background=col;
+  document.getElementById('headerAvatar').textContent=initials(user);
+  document.getElementById('headerName').textContent=user;
+  loadPet();buildCategories();updateUI();refreshLog();loop();
+  setInterval(refreshLog,60000);
+}
+
+// ── Pet state ────────────────────────────────────────────────
+function petKey(){return'midiopago-pet-'+user.toLowerCase();}
+function loadPet(){try{const d=localStorage.getItem(petKey());if(d)pet=JSON.parse(d);}catch(e){}}
+function savePet(){try{localStorage.setItem(petKey(),JSON.stringify(pet));}catch(e){}}
+function getStage(){let s=0;for(let i=STAGES.length-1;i>=0;i--){if(pet.xp>=STAGES[i].xp){s=i;break;}}return s;}
+function xpLevel(){
+  const s=getStage(),base=STAGES[s].xp,cap=XP_CAPS[s];
+  const cur=pet.xp-base,need=cap===Infinity?999:cap-base;
+  return{cur,need,pct:cap===Infinity?100:Math.min(100,Math.round(cur/need*100))};
+}
+function getMood(){
+  const t=new Date().toDateString(),y=new Date(Date.now()-86400000).toDateString();
+  if(pet.lastDate===t)return{label:'Produzindo muito!',bg:'#0d2a1d',col:'#5DCAA5'};
+  if(pet.lastDate===y)return{label:'Com saudade de você',bg:'#2e2700',col:'#EF9F27'};
+  return{label:'Sentindo falta...',bg:'#2e1010',col:'#E24B4A'};
+}
+
+// ── Log habit ────────────────────────────────────────────────
+async function logHabit(h){
+  const prev=getStage();
+  pet.xp=Math.max(0,pet.xp+h.xp);
+  const t=new Date().toDateString(),y=new Date(Date.now()-86400000).toDateString();
+  if(pet.lastDate!==t){pet.streak=pet.lastDate===y?pet.streak+1:1;pet.lastDate=t;}
+  const now=new Date(),ts=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const entry={user,label:h.label,xp:h.xp,ts,date:now.toLocaleDateString('pt-BR')};
+  pet.log.unshift(entry);if(pet.log.length>10)pet.log.pop();
+  const next=getStage();
+  if(next>prev){anim.evolve=true;anim.et=0;}else{anim.jump=true;anim.jt=0;}
+  savePet();updateUI();
+  showToast(next>prev?`✦ Evoluiu para ${STAGES[next].name.split(' - ')[1]}! +${h.xp} XP`:'+'+h.xp+' XP · '+h.label,next>prev);
+  await pushEntry(entry);
+  refreshLog();
+}
+
+// ── JSONBin ──────────────────────────────────────────────────
+async function fetchData(){
+  if(!IS_SHARED)return null;
+  try{
+    const r=await fetch('https://api.jsonbin.io/v3/b/'+JSONBIN_BIN_ID+'/latest',{headers:{'X-Master-Key':JSONBIN_API_KEY,'X-Bin-Meta':'false'}});
+    if(!r.ok)return null;
+    const d=await r.json();
+    return{log:d.log||[],scores:d.scores||{}};
+  }catch(e){return null;}
+}
+async function pushEntry(entry){
+  if(!IS_SHARED)return;
+  try{
+    const current=await fetchData()||{log:[],scores:{}};
+    current.log.unshift(entry);if(current.log.length>80)current.log.length=80;
+    current.scores[entry.user]=(current.scores[entry.user]||0)+entry.xp;
+    cachedData=current;
+    await fetch('https://api.jsonbin.io/v3/b/'+JSONBIN_BIN_ID,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_API_KEY},body:JSON.stringify(current)});
+  }catch(e){}
+}
+
+async function refreshLog(){
+  ['refreshBtn','refreshRankBtn'].forEach(id=>{const b=document.getElementById(id);if(b){b.innerHTML='<span class="spinner"></span>';b.disabled=true;}});
+  const remote=IS_SHARED?await fetchData():null;
+  if(remote)cachedData=remote;
+  const logEntries=IS_SHARED?cachedData.log:pet.log;
+  const scores=IS_SHARED?cachedData.scores:{[user]:pet.xp};
+  renderFeed(logEntries);
+  renderRanking(scores);
+  ['refreshBtn','refreshRankBtn'].forEach(id=>{const b=document.getElementById(id);if(b){b.innerHTML='↻ Atualizar';b.disabled=false;}});
+}
+
+// ── Feed render ──────────────────────────────────────────────
+function renderFeed(entries){
+  document.getElementById('setupNotice').style.display=IS_SHARED?'none':'block';
+  const list=document.getElementById('logList'),empty=document.getElementById('emptyLog');
+  if(!entries||!entries.length){list.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  list.innerHTML=entries.map(e=>{
+    const col=nameColor(e.user||'?'),ini=initials(e.user||'?');
+    return`<div class="log-item">
+      <div class="log-avatar" style="background:${col}">${ini}</div>
+      <div class="log-body"><div class="log-who">${e.user||'Anônimo'}</div><div class="log-what">${e.label}</div></div>
+      <div class="log-meta"><span class="log-xp-pill">+${e.xp} XP</span><span class="log-ts">${e.ts||''}${e.date?' · '+e.date:''}</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ── Ranking render ───────────────────────────────────────────
+function renderRanking(scores){
+  document.getElementById('rankingNotice').style.display=IS_SHARED?'none':'block';
+  const list=document.getElementById('rankingList'),empty=document.getElementById('emptyRanking');
+  const entries=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  if(!entries.length){list.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  const maxXP=entries[0][1]||1;
+  const medals=['🥇','🥈','🥉'];
+  const medalClass=['gold','silver','bronze'];
+  list.innerHTML=entries.map(([name,xp],i)=>{
+    const col=nameColor(name),ini=initials(name),pct=Math.round(xp/maxXP*100);
+    const si=stageForXP(xp),stageName=STAGES[si].name.split(' - ')[1]||STAGES[si].name;
+    const posLabel=i<3?medals[i]:''+(i+1);
+    const posClass=i<3?medalClass[i]:'';
+    return`<div class="rank-row">
+      <div class="rank-pos ${posClass}">${posLabel}</div>
+      <div class="rank-avatar" style="background:${col}">${ini}</div>
+      <div class="rank-info">
+        <div class="rank-name">${name}</div>
+        <div class="rank-bar-wrap"><div class="rank-bar" style="width:${pct}%;background:${col}"></div></div>
+        <div class="rank-stage">${stageName}</div>
+      </div>
+      <div class="rank-xp">${xp.toLocaleString('pt-BR')} XP</div>
+    </div>`;
+  }).join('');
+  // Trigger bar animation next frame
+  setTimeout(()=>{
+    document.querySelectorAll('.rank-bar').forEach(b=>{const w=b.style.width;b.style.width='0';requestAnimationFrame(()=>{b.style.width=w;});});
+  },50);
+}
+
+// ── Tab switch ───────────────────────────────────────────────
+function switchTab(tab){
+  activeTab=tab;
+  document.getElementById('feedView').style.display=tab==='feed'?'block':'none';
+  document.getElementById('rankingView').style.display=tab==='ranking'?'block':'none';
+  document.getElementById('tabFeed').classList.toggle('active',tab==='feed');
+  document.getElementById('tabRanking').classList.toggle('active',tab==='ranking');
+}
+
+// ── UI ───────────────────────────────────────────────────────
+function updateUI(){
+  const si=getStage(),sd=STAGES[si],xp=xpLevel(),mood=getMood();
+  document.getElementById('petName').textContent=sd.name;
+  document.getElementById('petStageLabel').textContent=sd.short;
+  document.getElementById('tipBox').textContent=sd.desc;
+  document.getElementById('xpText').textContent=xp.cur+' / '+(xp.need===999?'∞':xp.need)+' XP';
+  document.getElementById('xpFill').style.width=xp.pct+'%';
+  document.getElementById('statStage').textContent=si;
+  document.getElementById('statStreak').textContent=pet.streak+'d';
+  document.getElementById('statTotal').textContent=pet.xp;
+  const b=document.getElementById('moodBadge');b.textContent='● '+mood.label;b.style.background=mood.bg;b.style.color=mood.col;
+}
+let tTimer=null;
+function showToast(msg,evolve=false){
+  const el=document.getElementById('toast');el.textContent=msg;el.style.color=evolve?'#EF9F27':'#5DCAA5';el.style.opacity='1';
+  if(tTimer)clearTimeout(tTimer);tTimer=setTimeout(()=>{el.style.opacity='0';},2800);
+}
+
+// ── Accordion ────────────────────────────────────────────────
+function buildCategories(){
+  const wrap=document.getElementById('categoryList');
+  HABIT_CATEGORIES.forEach((cat,ci)=>{
+    const block=document.createElement('div');block.className='cat-block';
+    const header=document.createElement('button');header.className='cat-header';
+    const arrowId='arrow-'+cat.id;
+    header.innerHTML=`<span class="cat-emoji">${cat.emoji}</span><span class="cat-title">${cat.title}</span><span class="cat-count">${cat.habits.length}</span><span class="cat-arrow" id="${arrowId}">▾</span>`;
+    header.addEventListener('click',()=>{
+      document.getElementById('body-'+cat.id).classList.toggle('open');
+      document.getElementById(arrowId).classList.toggle('open');
+    });
+    const body=document.createElement('div');body.className='cat-body';body.id='body-'+cat.id;
+    const inner=document.createElement('div');inner.className='cat-inner';
+    const grid=document.createElement('div');grid.className='habit-grid';
+    cat.habits.forEach(h=>{
+      const btn=document.createElement('button');btn.className='habit-btn';
+      btn.innerHTML=`<div class="hb-label">${h.label}</div><div class="hb-xp">+${h.xp} XP</div>`;
+      btn.addEventListener('click',()=>logHabit(h));grid.appendChild(btn);
+    });
+    inner.appendChild(grid);body.appendChild(inner);block.appendChild(header);block.appendChild(body);wrap.appendChild(block);
+    if(ci===0){body.classList.add('open');document.getElementById(arrowId).classList.add('open');}
+  });
+}
+
+// ── Canvas pet ───────────────────────────────────────────────
+const C={teal:'#5DCAA5',tealDk:'#1D9E75',tealDkr:'#0F6E56',green:'#97C459',greenDk:'#3B6D11',amber:'#EF9F27',amberDk:'#BA7517',gray:'#B4B2A9',grayDk:'#888780',white:'#FFFFFF',dark:'#0b0e16'};
+function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
+function ey(ctx,x,y,r){ctx.fillStyle=C.white;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.fillStyle=C.dark;ctx.beginPath();ctx.arc(x+r*.1,y+r*.1,r*.58,0,Math.PI*2);ctx.fill();ctx.fillStyle=C.white;ctx.beginPath();ctx.arc(x+r*.35,y-r*.2,r*.22,0,Math.PI*2);ctx.fill();}
+function sm(ctx,x,y,r){ctx.strokeStyle=C.dark;ctx.lineWidth=1.8;ctx.beginPath();ctx.arc(x,y,r,.1*Math.PI,.9*Math.PI);ctx.stroke();}
+function dEgg(ctx){ctx.fillStyle=C.teal;ctx.beginPath();ctx.ellipse(0,8,32,42,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(255,255,255,.18)';ctx.beginPath();ctx.ellipse(-10,-10,9,14,-.35,0,Math.PI*2);ctx.fill();ctx.strokeStyle=C.tealDkr;ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(-2,-22);ctx.lineTo(4,-14);ctx.lineTo(-1,-8);ctx.stroke();ey(ctx,-9,8,5.5);ey(ctx,9,8,5.5);}
+function dHatch(ctx){ctx.fillStyle=C.grayDk;ctx.beginPath();ctx.moveTo(-28,30);ctx.lineTo(-8,12);ctx.lineTo(8,18);ctx.lineTo(28,30);ctx.closePath();ctx.fill();ctx.fillStyle=C.gray;ctx.beginPath();ctx.ellipse(0,32,28,12,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=C.teal;ctx.beginPath();ctx.ellipse(0,4,20,24,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(0,-16,18,0,Math.PI*2);ctx.fill();ctx.fillStyle=C.tealDk;ctx.beginPath();ctx.ellipse(-16,-28,5,7,.3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(16,-28,5,7,-.3,0,Math.PI*2);ctx.fill();ey(ctx,-8,-18,7);ey(ctx,8,-18,7);sm(ctx,0,-8,5);ctx.fillStyle=C.tealDk;ctx.beginPath();ctx.ellipse(-22,4,7,5,-.4,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(22,4,7,5,.4,0,Math.PI*2);ctx.fill();}
+function dJunior(ctx){ctx.fillStyle=C.teal;rr(ctx,-18,-2,36,32,9);ctx.fill();ctx.beginPath();ctx.arc(0,-18,21,0,Math.PI*2);ctx.fill();ctx.fillStyle=C.amberDk;ctx.beginPath();ctx.moveTo(-12,-36);ctx.lineTo(-6,-23);ctx.lineTo(-18,-23);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(12,-36);ctx.lineTo(18,-23);ctx.lineTo(6,-23);ctx.closePath();ctx.fill();ey(ctx,-9,-19,7);ey(ctx,9,-19,7);sm(ctx,0,-9,5.5);ctx.fillStyle=C.teal;ctx.beginPath();ctx.ellipse(-26,8,6,10,-.2,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(26,8,6,10,.2,0,Math.PI*2);ctx.fill();ctx.fillStyle=C.dark;rr(ctx,-14,16,28,18,2);ctx.fill();ctx.fillStyle='#173404';rr(ctx,-12,18,24,12,1);ctx.fill();ctx.fillStyle=C.green;ctx.fillRect(-9,21,13,2);ctx.fillRect(-9,24,8,2);ctx.fillStyle=C.amber;ctx.fillRect(-9,27,16,2);ctx.fillStyle=C.tealDk;rr(ctx,-14,30,11,12,4);ctx.fill();rr(ctx,3,30,11,12,4);ctx.fill();}
+function dMid(ctx){ctx.fillStyle=C.tealDk;rr(ctx,-22,-3,44,36,11);ctx.fill();ctx.fillStyle=C.teal;ctx.beginPath();ctx.ellipse(0,13,13,18,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=C.tealDk;ctx.beginPath();ctx.arc(0,-19,23,0,Math.PI*2);ctx.fill();ctx.fillStyle=C.amber;ctx.beginPath();ctx.moveTo(-13,-40);ctx.lineTo(-6,-24);ctx.lineTo(-20,-24);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(13,-40);ctx.lineTo(20,-24);ctx.lineTo(6,-24);ctx.closePath();ctx.fill();ey(ctx,-10,-21,8);ey(ctx,10,-21,8);sm(ctx,0,-10,6);ctx.fillStyle=C.tealDk;ctx.beginPath();ctx.ellipse(-29,8,7,12,-.15,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(29,8,7,12,.15,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(255,255,255,.4)';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('M',0,14);ctx.fillStyle=C.tealDkr;rr(ctx,-16,30,12,14,4);ctx.fill();rr(ctx,4,30,12,14,4);ctx.fill();}
+function dSenior(ctx){function wing(s){ctx.fillStyle=C.greenDk;ctx.beginPath();ctx.moveTo(s*22,-6);ctx.bezierCurveTo(s*55,-38,s*58,8,s*36,22);ctx.lineTo(s*22,14);ctx.closePath();ctx.fill();ctx.fillStyle=C.green;ctx.beginPath();ctx.moveTo(s*22,-6);ctx.bezierCurveTo(s*46,-28,s*50,5,s*33,18);ctx.lineTo(s*22,14);ctx.closePath();ctx.fill();}wing(-1);wing(1);ctx.fillStyle=C.tealDk;rr(ctx,-21,-4,42,34,11);ctx.fill();ctx.fillStyle=C.teal;ctx.beginPath();ctx.ellipse(0,11,12,16,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=C.tealDk;ctx.beginPath();ctx.arc(0,-19,23,0,Math.PI*2);ctx.fill();ctx.fillStyle=C.amber;[-14,0,14].forEach((ox,i)=>{const h=i===1?40:34;ctx.beginPath();ctx.moveTo(ox-5,-36);ctx.lineTo(ox,-36-h+36);ctx.lineTo(ox+5,-36);ctx.closePath();ctx.fill();});ey(ctx,-10,-21,8.5);ey(ctx,10,-21,8.5);sm(ctx,0,-10,6);ctx.fillStyle=C.tealDk;ctx.beginPath();ctx.ellipse(-27,7,6,11,-.1,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(27,7,6,11,.1,0,Math.PI*2);ctx.fill();ctx.fillStyle=C.tealDkr;rr(ctx,-15,28,12,14,4);ctx.fill();rr(ctx,3,28,12,14,4);ctx.fill();}
+function dLegend(ctx,si){
+  const dm=si>=7?14:si>=6?11:8;
+  for(let i=0;i<dm;i++){const a=i/dm*Math.PI*2+anim.t*.3,r=si>=7?58:si>=6?54:50,x=Math.cos(a)*r,y=Math.sin(a)*r;ctx.fillStyle=i%2===0?C.amber:C.teal;ctx.save();ctx.translate(x,y);ctx.rotate(a+Math.PI/4);const sz=si>=7?4:3;ctx.beginPath();ctx.rect(-sz,-sz,sz*2,sz*2);ctx.fill();ctx.restore();}
+  function bigWing(s){ctx.fillStyle=C.greenDk;ctx.beginPath();ctx.moveTo(s*20,-10);ctx.bezierCurveTo(s*65,-58,s*72,12,s*40,28);ctx.lineTo(s*20,14);ctx.closePath();ctx.fill();ctx.fillStyle=C.green;ctx.beginPath();ctx.moveTo(s*20,-10);ctx.bezierCurveTo(s*52,-42,s*56,8,s*37,22);ctx.lineTo(s*20,14);ctx.closePath();ctx.fill();}
+  bigWing(-1);bigWing(1);
+  if(si>=7){ctx.shadowColor='#EF9F27';ctx.shadowBlur=18;}
+  ctx.fillStyle=C.tealDkr;rr(ctx,-22,-6,44,36,12);ctx.fill();ctx.shadowBlur=0;
+  ctx.fillStyle=C.tealDk;for(let row=0;row<3;row++)for(let col=0;col<3;col++){ctx.beginPath();ctx.arc(-12+col*12,1+row*9,4,Math.PI,0);ctx.fill();}
+  ctx.fillStyle=C.amber;ctx.beginPath();ctx.moveTo(0,8);ctx.lineTo(8,18);ctx.lineTo(0,27);ctx.lineTo(-8,18);ctx.closePath();ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.5)';ctx.beginPath();ctx.moveTo(0,10);ctx.lineTo(5,16);ctx.lineTo(0,16);ctx.closePath();ctx.fill();
+  if(si>=7){ctx.shadowColor='#EF9F27';ctx.shadowBlur=12;}
+  ctx.fillStyle=C.tealDkr;ctx.beginPath();ctx.arc(0,-20,25,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+  const spikes=si>=7?7:5;ctx.fillStyle=C.amber;
+  for(let i=0;i<spikes;i++){const ox=-18+i*(36/(spikes-1)),h=i===Math.floor(spikes/2)?46:38;ctx.beginPath();ctx.moveTo(ox-5,-38);ctx.lineTo(ox,-38-h+38);ctx.lineTo(ox+5,-38);ctx.closePath();ctx.fill();}
+  ctx.fillStyle=C.amber;ctx.beginPath();ctx.arc(-10,-23,12,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(10,-23,12,0,Math.PI*2);ctx.fill();
+  ey(ctx,-10,-23,10);ey(ctx,10,-23,10);
+  ctx.fillStyle=C.tealDkr;ctx.beginPath();ctx.ellipse(-4,-11,2,1.5,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(4,-11,2,1.5,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=C.tealDkr;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(0,-7,7,.1*Math.PI,.9*Math.PI);ctx.stroke();
+  ctx.fillStyle=C.white;ctx.beginPath();ctx.moveTo(-5,-7);ctx.lineTo(-3.5,-3);ctx.lineTo(-2,-7);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(2,-7);ctx.lineTo(3.5,-3);ctx.lineTo(5,-7);ctx.closePath();ctx.fill();
+  ctx.fillStyle=C.tealDkr;ctx.beginPath();ctx.ellipse(-28,6,7,12,-.1,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(28,6,7,12,.1,0,Math.PI*2);ctx.fill();rr(ctx,-16,27,13,14,4);ctx.fill();rr(ctx,3,27,13,14,4);ctx.fill();
+  ctx.fillStyle=C.amber;[-13,-9,-5].forEach(x=>{ctx.beginPath();ctx.moveTo(x,41);ctx.lineTo(x+1.5,45);ctx.lineTo(x+3,41);ctx.closePath();ctx.fill();});[6,10,14].forEach(x=>{ctx.beginPath();ctx.moveTo(x,41);ctx.lineTo(x+1.5,45);ctx.lineTo(x+3,41);ctx.closePath();ctx.fill();});
+}
+const DRAW_FNS=[dEgg,dHatch,dJunior,dMid,dSenior];
+function drawPet(){
+  const cvs=document.getElementById('petCanvas'),ctx=cvs.getContext('2d');
+  ctx.clearRect(0,0,180,180);
+  const si=getStage(),bob=Math.sin(anim.t)*2.5,jump=anim.jump?-Math.sin(anim.jt)*20:0;
+  let sc=1;if(anim.evolve)sc=1+Math.sin(anim.et*3)*.12;
+  ctx.save();ctx.translate(90,90+bob+jump);ctx.scale(sc,sc);
+  if(si<5)DRAW_FNS[si](ctx);else dLegend(ctx,si);
+  ctx.restore();
+}
+function loop(){
+  anim.t+=.02;
+  if(anim.jump){anim.jt+=.1;if(anim.jt>Math.PI){anim.jump=false;anim.jt=0;}}
+  if(anim.evolve){anim.et+=.05;if(anim.et>Math.PI){anim.evolve=false;anim.et=0;}}
+  drawPet();requestAnimationFrame(loop);
+}
+document.getElementById('petCanvas').addEventListener('click',()=>{anim.jump=true;anim.jt=0;});
+
+const saved=localStorage.getItem('midiopago-user');
+if(saved){user=saved;showApp();}
+</script>
+</body>
+</html>
