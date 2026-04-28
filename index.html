@@ -3,46 +3,93 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>MídioPago 🐉</title>
 
+<!-- 🔊 SOM -->
+<audio id="xpSound" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+
 <style>
-body{background:#0b0f1a;color:#fff;font-family:sans-serif;display:flex;justify-content:center;padding:20px}
-.app{max-width:600px;width:100%}
-.card{background:#131a2a;padding:15px;border-radius:12px;margin-bottom:12px}
-button{width:100%;margin-top:8px;padding:10px;background:#1b2236;border:none;border-radius:8px;color:#fff}
-.xp{height:10px;background:#1b2236;border-radius:999px;overflow:hidden}
-.fill{height:100%;background:#4ADE80}
-.toast{text-align:center;opacity:0;transition:.3s}
+:root{
+  --bg:#0a0d14;
+  --card:#131722;
+  --card2:#1b2030;
+  --border:#262c3d;
+
+  --text:#e8ecf1;
+  --muted:#8b92a3;
+
+  --primary:#4ADE80;
+  --primary-dark:#16A34A;
+  --accent:#F59E0B;
+}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:system-ui;
+  display:flex;
+  justify-content:center;
+  padding:2rem;
+}
+.app{max-width:500px;width:100%}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:1.5rem;
+  margin-bottom:1rem;
+  text-align:center;
+}
+
+button{
+  background:var(--card2);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:.6rem;
+  color:white;
+  cursor:pointer;
+}
+button:hover{background:#22263a}
+
+.xp{
+  background:var(--card2);
+  height:10px;
+  border-radius:999px;
+  overflow:hidden;
+}
+.fill{
+  height:100%;
+  background:var(--primary-dark);
+}
+
+.toast{
+  text-align:center;
+  margin-top:10px;
+  opacity:0;
+  transition:.3s;
+}
 </style>
 </head>
 
 <body>
+
 <div class="app">
 
 <div class="card">
-<h2 id="stage"></h2>
-<p id="desc"></p>
+  <h2 id="stageName"></h2>
+  <p id="stageDesc"></p>
 
-<div class="xp"><div id="bar" class="fill"></div></div>
-<p id="xpText"></p>
-<p id="next"></p>
+  <div class="xp" style="margin-top:10px">
+    <div id="xpFill" class="fill" style="width:0%"></div>
+  </div>
+
+  <p id="xpText"></p>
+  <p id="nextXP" style="font-size:12px;color:var(--muted)"></p>
 </div>
 
 <div class="card">
-<button onclick="gainXP(20,'Análise de campanha')">Análise de campanha</button>
-<button onclick="gainXP(15,'Relatório')">Relatório</button>
-<button onclick="gainXP(15,'Publicação indevida')">Publicação indevida</button>
-</div>
-
-<div class="card">
-<h3>📋 Feed do time</h3>
-<div id="feed"></div>
-<button onclick="loadData()">Atualizar</button>
-</div>
-
-<div class="card">
-<h3>📊 Ranking</h3>
-<div id="ranking"></div>
+  <button onclick="gainXP(20)">+20 XP</button>
 </div>
 
 <div id="toast" class="toast"></div>
@@ -51,121 +98,103 @@ button{width:100%;margin-top:8px;padding:10px;background:#1b2236;border:none;bor
 
 <script>
 
-// 🔥 MULTIPLAYER ATIVO
-const IS_SHARED = true;
-
-// usuário
-let user = localStorage.getItem("user") || prompt("Seu nome?");
-localStorage.setItem("user", user);
-
-let xp = Number(localStorage.getItem("xp") || 0);
-
-// fases
 const STAGES=[
-{xp:0,name:"🍼 Jovem Aprendiz",desc:"Aprendendo o jogo"},
-{xp:100,name:"🐣 Estagiário",desc:"Começando a executar"},
-{xp:300,name:"💻 Analista",desc:"Entendendo os dados"},
-{xp:700,name:"🛡️ Especialista",desc:"Elevando qualidade"},
-{xp:1500,name:"🧭 Coordenador",desc:"Organizando o time"},
-{xp:3000,name:"🪽 Gerente",desc:"Pensando estratégia"},
-{xp:5000,name:"🧠 Superintendente",desc:"Antecipando cenários"},
-{xp:8000,name:"👑 Pai de Todos",desc:"Definindo o jogo"}
+{
+name:"🍼 Jovem Aprendiz",
+xp:0,
+desc:"Aqui o Mídio Pago ainda está entendendo como o jogo funciona. O briefing chega meio nebuloso, os termos parecem um idioma novo e cada tarefa vira uma pequena descoberta. Ele observa, pergunta, testa e aprende constantemente."
+},
+{
+name:"🐣 Estagiário",
+xp:100,
+desc:"Como Estagiário, o Mídio Pago começa a executar. As primeiras entregas saem, a ansiedade aparece e cada resultado vira aprendizado. É a fase onde a prática transforma teoria em experiência."
+},
+{
+name:"💻 Analista",
+xp:300,
+desc:"Agora o Mídio Pago já entende o que está fazendo. Ele entrega com consistência, questiona números e começa a enxergar padrões. Execução vira análise e confiança começa a aparecer."
+},
+{
+name:"🛡️ Especialista",
+xp:700,
+desc:"Como Especialista, o Mídio Pago não só executa, ele melhora. Identifica oportunidades, evita retrabalho e eleva o nível das entregas. Qualidade deixa de ser diferencial e passa a ser padrão."
+},
+{
+name:"🧭 Coordenador",
+xp:1500,
+desc:"Aqui o Mídio Pago começa a olhar o todo. Ele conecta pessoas, organiza demandas e garante que as coisas fluam. Não é mais só sobre fazer, é sobre fazer o time funcionar."
+},
+{
+name:"🪽 Gerente",
+xp:3000,
+desc:"Como Gerente, o Mídio Pago ganha visão. Ele questiona, prioriza e direciona. Entende que impacto vale mais do que volume e que estratégia guia as decisões."
+},
+{
+name:"🧠 Superintendente",
+xp:5000,
+desc:"Agora o Mídio Pago enxerga antes de acontecer. Ele antecipa cenários, conecta áreas e toma decisões com clareza mesmo em ambientes complexos."
+},
+{
+name:"👑 Pai de Todos",
+xp:8000,
+desc:"Aqui o Mídio Pago define o jogo. Suas decisões impactam o futuro e o trabalho deixa de ser tarefa para se tornar transformação."
+}
 ];
 
+let xp=0;
+
 function getStage(){
-for(let i=STAGES.length-1;i>=0;i--){
-if(xp>=STAGES[i].xp)return i;
-}
-}
-
-// atualizar UI
-function update(){
-let s=getStage();
-let next=STAGES[s+1];
-
-document.getElementById("stage").innerText=STAGES[s].name;
-document.getElementById("desc").innerText=STAGES[s].desc;
-document.getElementById("xpText").innerText=xp+" XP";
-
-if(next){
-document.getElementById("bar").style.width=((xp-STAGES[s].xp)/(next.xp-STAGES[s].xp)*100)+"%";
-document.getElementById("next").innerText="Faltam "+(next.xp-xp)+" XP";
-}else{
-document.getElementById("bar").style.width="100%";
-document.getElementById("next").innerText="Nível máximo";
-}
+  let s=0;
+  for(let i=STAGES.length-1;i>=0;i--){
+    if(xp>=STAGES[i].xp){s=i;break;}
+  }
+  return s;
 }
 
-// ganhar XP
-function gainXP(v,action){
-xp+=v;
-localStorage.setItem("xp",xp);
+function updateUI(){
+  const s=getStage();
+  const stage=STAGES[s];
 
-showToast("+"+v+" XP");
+  document.getElementById("stageName").innerText=stage.name;
+  document.getElementById("stageDesc").innerText=stage.desc;
 
-pushEntry({user, label:action, xp:v});
-update();
-}
+  const next=STAGES[s+1];
+  const pct=next?((xp-stage.xp)/(next.xp-stage.xp))*100:100;
 
-// 🔥 BUSCAR DADOS (via proxy)
-async function fetchData(){
-  try{
-    const r = await fetch('/api/proxy');
-    if(!r.ok) return null;
-    return await r.json();
-  }catch(e){
-    return null;
+  document.getElementById("xpFill").style.width=pct+"%";
+  document.getElementById("xpText").innerText=xp+" XP";
+
+  if(next){
+    document.getElementById("nextXP").innerText="Faltam "+(next.xp-xp)+" XP para próxima fase";
+  }else{
+    document.getElementById("nextXP").innerText="Nível máximo atingido";
   }
 }
 
-// 🔥 ENVIAR DADOS
-async function pushEntry(entry){
-  try{
-    await fetch('/api/proxy', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: entry.label,
-        xpGain: entry.xp,
-        user: entry.user
-      })
-    });
-  }catch(e){}
+function gainXP(v){
+  xp+=v;
+
+  // 🔊 som
+  const s=document.getElementById("xpSound");
+  s.currentTime=0;
+  s.play().catch(()=>{});
+
+  showToast("+"+v+" XP");
+
+  updateUI();
 }
 
-// carregar feed + ranking
-async function loadData(){
-const data = await fetchData();
-if(!data) return;
-
-// feed
-let feedHTML="";
-data.logs.slice(0,5).forEach(l=>{
-feedHTML+=`<p>${l.user} fez ${l.action} +${l.xp}</p>`;
-});
-document.getElementById("feed").innerHTML=feedHTML;
-
-// ranking
-let rankingHTML="";
-Object.entries(data.users)
-.sort((a,b)=>b[1]-a[1])
-.forEach(([name,val])=>{
-rankingHTML+=`<p>${name} — ${val} XP</p>`;
-});
-document.getElementById("ranking").innerHTML=rankingHTML;
-}
-
-// toast
 function showToast(msg){
-const el=document.getElementById("toast");
-el.innerText="🔥 "+msg;
-el.style.opacity=1;
-setTimeout(()=>el.style.opacity=0,2000);
+  const el=document.getElementById("toast");
+  el.innerText="🔥 Mandou bem! "+msg+" e você fortaleceu o time";
+  el.style.opacity=1;
+
+  setTimeout(()=>el.style.opacity=0,2000);
 }
 
-update();
-loadData();
+updateUI();
 
 </script>
+
 </body>
 </html>
